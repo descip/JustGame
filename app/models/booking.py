@@ -1,19 +1,34 @@
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import ForeignKey, DateTime, String, Enum
-from app.db.session import Base
+from __future__ import annotations
+
 import enum
+from datetime import datetime
+
+from sqlalchemy import Enum, ForeignKey, DateTime, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.session import Base
+
 
 class BookingStatus(str, enum.Enum):
-    pending = "pending"
-    confirmed = "confirmed"
-    canceled = "canceled"
+    active = "active"
+    cancelled = "cancelled"
+
 
 class Booking(Base):
     __tablename__ = "bookings"
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    machine_id: Mapped[int] = mapped_column(ForeignKey("machines.id"), index=True)
-    start_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True))
-    end_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True))
-    status: Mapped[BookingStatus] = mapped_column(Enum(BookingStatus), default=BookingStatus.pending)
-    note: Mapped[str] = mapped_column(String(255), default="")
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, index=True)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    machine_id: Mapped[int] = mapped_column(ForeignKey("machines.id"), index=True, nullable=False)
+
+    start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    status: Mapped[BookingStatus] = mapped_column(
+        Enum(BookingStatus),
+        default=BookingStatus.active,
+        nullable=False
+    )
