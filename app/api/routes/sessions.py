@@ -1,9 +1,9 @@
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
-from typing import cast
+from typing import cast, List
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_current_user
@@ -11,6 +11,12 @@ from app.core.audit import log_action
 from app.core.pricing import calculate_total_price
 from app.models.machine import Machine, MachineStatus as MachineStatusEnum
 from app.models.session_model import Session
+from app.models.user import User
+from app.models.payment import (
+    Payment,
+    PaymentMethod as PaymentMethodEnum,
+    PaymentStatus as PaymentStatusEnum,
+)
 from app.schemas.session import (
     SessionOut,
     SessionStartIn,
@@ -28,6 +34,38 @@ def _role_value(r) -> str:
     return getattr(r, "value", str(r))
 
 
+@router.get("", response_model=List[SessionOut])
+async def list_sessions(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    role = _role_value(user.role)
+    
+    stmt = select(Session).order_by(Session.started_at.desc())
+    if role == "user":
+        stmt = stmt.where(Session.user_id == user.id)
+    
+    res = await db.execute(stmt)
+    rows = list(res.scalars())
+    
+    ip = request.client.host if request.client else None
+    await log_action(
+        db,
+        user=user,
+        action="LIST_SESSIONS",
+        entity="session",
+        entity_id=None,
+        details=f"scope={'all' if role in {'admin','operator'} else 'own'}; count={len(rows)}",
+        ip_address=ip,
+    )
+    
+    return [SessionOut.model_validate(row, from_attributes=True) for row in rows]
+
+
 @router.post("/start", response_model=SessionOut)
 async def start_session(
     payload: SessionStartIn,
@@ -41,6 +79,13 @@ async def start_session(
     role = _role_value(user.role)
     if role not in {"admin", "operator"}:
         raise HTTPException(status_code=403, detail="Insufficient role")
+
+    # 0) Проверяем существование пользователя
+    target_user = (
+        await db.execute(select(User).where(User.id == payload.user_id))
+    ).scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
 
     # 1) Запрет: у пользователя уже есть активная сессия
     active_user = (
@@ -216,10 +261,36 @@ async def stop_session(
     s.ended_at = now
     machine.status = MachineStatusEnum.available
 
+    # Создаём платеж для завершённой сессии, если его ещё нет
+    existing_payment = (
+        await db.execute(
+            select(Payment).where(Payment.session_id == s.id)
+        )
+    ).scalar_one_or_none()
+    
+    if not existing_payment:
+        # Создаём новый платеж
+        payment = Payment(
+            user_id=s.user_id,
+            session_id=s.id,
+            method=PaymentMethodEnum.cash,  # По умолчанию наличный платёж
+            status=PaymentStatusEnum.succeeded,
+            hours=billed_minutes // 60,
+            amount=cast(Decimal, total),
+            note=f"Платеж за сессию {s.id}",
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(payment)
+
+    db.add(s)  # Убеждаемся, что сессия тоже в сессии
     db.add(machine)
+    
     await db.commit()
     await db.refresh(s)
     await db.refresh(machine)
+    if not existing_payment:
+        await db.refresh(payment)
 
     ip = request.client.host if request.client else None
     await log_action(
@@ -238,3 +309,48 @@ async def stop_session(
         amount=float(s.amount),
         ended_at=cast(datetime, s.ended_at),
     )
+
+
+@router.delete("/{session_id}")
+async def delete_ended_session(
+    session_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    if user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    role = _role_value(user.role)
+    if role not in {"admin", "operator"}:
+        raise HTTPException(status_code=403, detail="Insufficient role")
+
+    s = (
+        await db.execute(select(Session).where(Session.id == session_id))
+    ).scalar_one_or_none()
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if s.ended_at is None:
+        raise HTTPException(status_code=400, detail="Only ended sessions can be deleted")
+
+    # Отвязываем платежи, чтобы не нарушить FK (Payment.session_id -> Session.id)
+    await db.execute(
+        update(Payment).where(Payment.session_id == s.id).values(session_id=None)
+    )
+
+    await db.execute(delete(Session).where(Session.id == session_id))
+    await db.commit()
+
+    ip = request.client.host if request.client else None
+    await log_action(
+        db,
+        user=user,
+        action="DELETE_SESSION",
+        entity="session",
+        entity_id=session_id,
+        details="ended=true; payments_unlinked=true",
+        ip_address=ip,
+    )
+
+    return {"ok": True}

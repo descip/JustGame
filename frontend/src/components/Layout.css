@@ -1,0 +1,80 @@
+.layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+}
+
+.layout-menu-button {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1001;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.layout-menu-button:hover {
+  background-color: var(--hover-bg);
+  border-color: var(--accent-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.layout-content {
+  flex: 1;
+  padding: 2rem;
+  margin-left: 280px;
+  background-color: var(--bg-primary);
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+  width: calc(100% - 280px);
+}
+
+/* Планшет: компактный сайдбар */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .layout-content {
+    margin-left: 80px;
+    width: calc(100% - 80px);
+    padding: 1.5rem;
+  }
+}
+
+/* Мобильный: без отступа */
+@media (max-width: 768px) {
+  .layout-menu-button {
+    display: block;
+  }
+
+  .layout-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 1rem;
+    padding-top: 4.5rem; /* Отступ для кнопки меню */
+  }
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 480px) {
+  .layout-content {
+    padding: 0.75rem;
+    padding-top: 4rem;
+  }
+
+  .layout-menu-button {
+    top: 0.75rem;
+    left: 0.75rem;
+    padding: 0.625rem;
+    font-size: 1.125rem;
+  }
+}
+
+

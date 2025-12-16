@@ -205,6 +205,17 @@ async def fake_online_payment(
     if user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    role = _role_value(user.role)
+    if role not in {"admin", "operator"}:
+        raise HTTPException(status_code=403, detail="Insufficient role")
+
+    # Проверяем существование пользователя
+    target_user = (
+        await db.execute(select(User).where(User.id == payload.user_id))
+    ).scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     # создаём pending-платёж
     amount = (Decimal("90") * Decimal(payload.hours)).quantize(Decimal("0.01"))
 

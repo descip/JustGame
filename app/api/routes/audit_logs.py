@@ -20,11 +20,11 @@ def _role_value(r) -> str:
     return getattr(r, "value", str(r))
 
 
-def _require_admin_or_operator(user) -> None:
+def _require_operator(user) -> None:
     if user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    if _role_value(user.role) not in {"admin", "operator"}:
-        raise HTTPException(status_code=403, detail="Forbidden")
+    if _role_value(user.role) != "operator":
+        raise HTTPException(status_code=403, detail="Only operator allowed")
 
 
 @router.get("", response_model=List[AuditLogOut])
@@ -39,7 +39,7 @@ async def list_audit_logs(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    _require_admin_or_operator(user)
+    _require_operator(user)
 
     filters = []
     if user_id is not None:

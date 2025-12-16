@@ -1,10 +1,11 @@
 fastapi
 uvicorn[standard]
 sqlalchemy
+psycopg[binary]
 pydantic
 pydantic-settings
-passlib[bcrypt]
-python-jose
+bcrypt
+python-jose[cryptography]
 python-dotenv
 email-validator
 openpyxl

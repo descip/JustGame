@@ -17,3 +17,6 @@ class UserOut(BaseModel):
     role: Role
     class Config:
         from_attributes = True
+
+class UserRoleUpdate(BaseModel):
+    role: Role

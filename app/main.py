@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from sqlalchemy import text
 
 from app.db.session import engine, Base
-from app.api.routes import auth, machines, bookings, sessions, health, payments, reports, audit_logs
+from app.api.routes import auth, machines, bookings, sessions, health, payments, reports, audit_logs, users
 from app.core.auto_close import auto_close_loop
 from app.models import audit_log  # noqa: F401
 
@@ -18,6 +18,7 @@ app.include_router(sessions.router)
 app.include_router(payments.router)
 app.include_router(reports.router)
 app.include_router(audit_logs.router)
+app.include_router(users.router)
 
 @app.on_event("startup")
 async def on_startup():

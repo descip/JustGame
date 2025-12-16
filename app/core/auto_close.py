@@ -9,6 +9,11 @@ from app.core.pricing import calculate_total_price
 from app.db.session import async_session
 from app.models.machine import Machine, MachineStatus as MachineStatusEnum
 from app.models.session_model import Session
+from app.models.payment import (
+    Payment,
+    PaymentMethod as PaymentMethodEnum,
+    PaymentStatus as PaymentStatusEnum,
+)
 
 
 CHECK_INTERVAL_SECONDS = 10  # как часто проверять автозавершение
@@ -54,6 +59,28 @@ async def _close_due_sessions_once(db: AsyncSession) -> int:
             start=start_at,
             end=end_at,
         )
+
+        # Создаём платеж для завершённой сессии, если его ещё нет
+        existing_payment = (
+            await db.execute(
+                select(Payment).where(Payment.session_id == s.id)
+            )
+        ).scalar_one_or_none()
+        
+        if not existing_payment:
+            payment = Payment(
+                user_id=s.user_id,
+                session_id=s.id,
+                method=PaymentMethodEnum.cash,  # По умолчанию наличный платёж
+                status=PaymentStatusEnum.succeeded,
+                hours=int(s.paid_minutes) // 60,
+                amount=s.amount,
+                note=f"Auto-closed session {s.id}",
+                created_at=end_at,
+                updated_at=end_at,
+            )
+            db.add(payment)
+            db.add(s)  # Убеждаемся, что сессия тоже в сессии
 
         machine.status = MachineStatusEnum.available
         closed += 1

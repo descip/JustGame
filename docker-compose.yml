@@ -1,24 +1,36 @@
-version: "3.9"
 services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: pcclub
-      POSTGRES_PASSWORD: pcclub
-      POSTGRES_DB: pcclub
-    ports: ["5432:5432"]
+      POSTGRES_USER: ${POSTGRES_USER:-pcclub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pcclub}
+      POSTGRES_DB: ${POSTGRES_DB:-pcclub}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pcclub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build: .
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     environment:
-      DATABASE_URL: postgresql+psycopg://pcclub:pcclub@db:5432/pcclub
-      SECRET_KEY: change-me
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://pcclub:pcclub@db:5432/pcclub}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
     volumes:
       - ./:/code
     working_dir: /code
-    depends_on: [db]
-    ports: ["8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8000}:8000"
+    restart: unless-stopped
+
 volumes:
   pgdata:

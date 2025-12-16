@@ -28,7 +28,8 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 def _require_operator(user):
     if user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    if getattr(user.role, "value", user.role) != "operator":
+    role = getattr(user.role, "value", user.role)
+    if role != "operator":
         raise HTTPException(status_code=403, detail="Only operator allowed")
 
 
