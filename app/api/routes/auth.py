@@ -19,11 +19,17 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
         if exists.scalar_one_or_none():
             raise HTTPException(status_code=400, detail="Email already registered")
         
-        # Все новые пользователи регистрируются только с ролью user
+        # Используем роль из payload, если указана, иначе по умолчанию user
+        # payload.role уже является строкой из enum, конвертируем в Role enum модели
+        if payload.role:
+            user_role = Role(payload.role.value if hasattr(payload.role, 'value') else payload.role)
+        else:
+            user_role = Role.user
+        
         user = User(
             email=payload.email,
             password_hash=get_password_hash(payload.password),
-            role=Role.user
+            role=user_role
         )
         db.add(user)
         await db.commit()
