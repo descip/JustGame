@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { paymentService } from '../api/services'
 import { Payment, PaymentMethod, PaymentStatus, CashPaymentCreate, OnlinePaymentCreate } from '../api/types'
 import { useToastStore } from '../store/toastStore'
 import { getErrorMessage } from '../utils/errorHandler'
 import LoadingSkeleton from '../components/LoadingSkeleton'
+import Pagination from '../components/Pagination'
 import dayjs from 'dayjs'
 import './Payments.css'
 
@@ -22,6 +23,8 @@ export default function Payments() {
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<PaymentStatus | 'all'>('all')
   const [methodFilter, setMethodFilter] = useState<PaymentMethod | 'all'>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(5)
   const queryClient = useQueryClient()
   const showToast = useToastStore((state) => state.showToast)
 
@@ -35,6 +38,19 @@ export default function Payments() {
     const matchesMethod = methodFilter === 'all' || payment.method === methodFilter
     return matchesStatus && matchesMethod
   })
+
+  // Пагинация для платежей
+  const totalPages = Math.ceil(filteredPayments.length / itemsPerPage)
+  const paginatedPayments = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    const end = start + itemsPerPage
+    return filteredPayments.slice(start, end)
+  }, [filteredPayments, currentPage, itemsPerPage])
+
+  // Сброс страницы при изменении фильтров
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [statusFilter, methodFilter])
 
   const cashMutation = useMutation({
     mutationFn: paymentService.createCash,
@@ -158,8 +174,9 @@ export default function Payments() {
         ) : filteredPayments.length === 0 ? (
           <div className="empty-state">Платежи не найдены</div>
         ) : (
-          <div className="payments-list">
-            {filteredPayments.map((payment) => (
+          <>
+            <div className="payments-list">
+              {paginatedPayments.map((payment) => (
               <div key={payment.id} className="payment-card">
                 <div className="payment-header">
                   <div>
@@ -198,8 +215,19 @@ export default function Payments() {
                   )}
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            {filteredPayments.length > itemsPerPage && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                itemsPerPage={itemsPerPage}
+                totalItems={filteredPayments.length}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={setItemsPerPage}
+              />
+            )}
+          </>
         )}
       </div>
 

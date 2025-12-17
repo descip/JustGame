@@ -75,7 +75,7 @@ async def _close_due_sessions_once(db: AsyncSession) -> int:
                 status=PaymentStatusEnum.succeeded,
                 hours=int(s.paid_minutes) // 60,
                 amount=s.amount,
-                note=f"Auto-closed session {s.id}",
+                note=f"Автоматически завершенная сессия {s.id}",
                 created_at=end_at,
                 updated_at=end_at,
             )
