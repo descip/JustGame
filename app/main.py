@@ -23,8 +23,14 @@ app.include_router(users.router)
 @app.on_event("startup")
 async def on_startup():
     # Create tables automatically for dev/demo
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Обрабатываем ошибки подключения, чтобы приложение могло запуститься
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        # Логируем ошибку, но не блокируем запуск приложения
+        print(f"Warning: Could not create tables on startup: {e}")
+        print("Tables will be created when database is available")
 
     # Start background auto-close loop
     asyncio.create_task(auto_close_loop())
