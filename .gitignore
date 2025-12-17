@@ -47,8 +47,6 @@ desktop.ini
 
 # Docker
 *.log
-.dockerignore
-
 # Временные файлы
 *.tmp
 *.temp
