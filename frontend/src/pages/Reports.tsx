@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { reportService } from '../api/services'
+import { PowerReportOut, FinanceReportOut } from '../api/types'
 import { useToastStore } from '../store/toastStore'
 import { getErrorMessage } from '../utils/errorHandler'
 import dayjs from 'dayjs'
@@ -31,7 +32,7 @@ export default function Reports() {
     return dayjs(dateStr).toISOString()
   }
 
-  const { data: powerReport, isLoading: powerLoading, error: powerError } = useQuery({
+  const { data: powerReport, isLoading: powerLoading, error: powerError } = useQuery<PowerReportOut>({
     queryKey: ['power-report', powerDateFrom, powerDateTo, pricePerKwh],
     queryFn: () => {
       const from = formatDateForAPI(powerDateFrom)
@@ -39,12 +40,9 @@ export default function Reports() {
       return reportService.getPowerReport(from, to, pricePerKwh)
     },
     enabled: activeTab === 'power',
-    onError: (error) => {
-      showToast(getErrorMessage(error), 'error')
-    },
   })
 
-  const { data: financeReport, isLoading: financeLoading, error: financeError } = useQuery({
+  const { data: financeReport, isLoading: financeLoading, error: financeError } = useQuery<FinanceReportOut>({
     queryKey: ['finance-report', financeDateFrom, financeDateTo],
     queryFn: () => {
       const from = formatDateForAPI(financeDateFrom)
@@ -52,10 +50,20 @@ export default function Reports() {
       return reportService.getFinanceReport(from, to)
     },
     enabled: activeTab === 'finance',
-    onError: (error) => {
-      showToast(getErrorMessage(error), 'error')
-    },
   })
+
+  // Обработка ошибок
+  useEffect(() => {
+    if (powerError) {
+      showToast(getErrorMessage(powerError), 'error')
+    }
+  }, [powerError, showToast])
+
+  useEffect(() => {
+    if (financeError) {
+      showToast(getErrorMessage(financeError), 'error')
+    }
+  }, [financeError, showToast])
 
   const handleExportPower = async () => {
     try {

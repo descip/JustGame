@@ -91,7 +91,7 @@ export default function Dashboard() {
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="stat-card">
                   <LoadingSkeleton height="1rem" width="60%" />
-                  <LoadingSkeleton height="2rem" width="40%" style={{ marginTop: '0.5rem' }} />
+                  <LoadingSkeleton height="2rem" width="40%" className="skeleton-margin" />
                 </div>
               ))}
             </div>

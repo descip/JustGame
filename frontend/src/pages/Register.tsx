@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuthStore } from '../store/authStore'
 import { authService } from '../api/services'
 import { Role } from '../api/types'
 import { getErrorMessage } from '../utils/errorHandler'

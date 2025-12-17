@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { Component, ErrorInfo, ReactNode } from 'react'
 import { AlertOutlined } from '@ant-design/icons'
 import './ErrorBoundary.css'
 
@@ -54,7 +54,7 @@ class ErrorBoundary extends Component<Props, State> {
             <p className="error-boundary-message">
               Произошла непредвиденная ошибка. Пожалуйста, попробуйте обновить страницу.
             </p>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.MODE === 'development' && this.state.error && (
               <details className="error-boundary-details">
                 <summary>Детали ошибки (только для разработки)</summary>
                 <pre className="error-boundary-stack">

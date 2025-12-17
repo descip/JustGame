@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { paymentService } from '../api/services'
-import { Payment, PaymentMethod, PaymentStatus, CashPaymentCreate, OnlinePaymentCreate } from '../api/types'
+import { PaymentMethod, PaymentStatus, CashPaymentCreate, OnlinePaymentCreate } from '../api/types'
 import { useToastStore } from '../store/toastStore'
 import { getErrorMessage } from '../utils/errorHandler'
 import LoadingSkeleton from '../components/LoadingSkeleton'

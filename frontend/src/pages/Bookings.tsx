@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { bookingService, machineService, authService } from '../api/services'
-import { Booking, BookingCreate, BookingStatus, Machine } from '../api/types'
+import { BookingCreate, BookingStatus } from '../api/types'
 import { useToastStore } from '../store/toastStore'
 import { useCurrentUser } from '../hooks/useCurrentUser'
 import { getErrorMessage } from '../utils/errorHandler'

@@ -21,7 +21,7 @@ import {
   User,
   UserCreate,
   UserProfile,
-  UserRoleUpdate,
+  Role,
 } from './types'
 
 // Auth

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { userService, authService } from '../api/services'
-import { User, Role } from '../api/types'
+import { Role } from '../api/types'
 import { useToastStore } from '../store/toastStore'
 import { getErrorMessage } from '../utils/errorHandler'
 import LoadingSkeleton from '../components/LoadingSkeleton'
