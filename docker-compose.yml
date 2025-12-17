@@ -24,9 +24,14 @@ services:
       dockerfile: Dockerfile
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://pcclub:pcclub@db:5432/pcclub}
+      # Явно указываем DATABASE_URL с хостом 'db' для Docker Compose
+      # Это переопределит любое значение из .env файла
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-pcclub}:${POSTGRES_PASSWORD:-pcclub}@db:5432/${POSTGRES_DB:-pcclub}
       SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      POSTGRES_USER: ${POSTGRES_USER:-pcclub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pcclub}
+      POSTGRES_DB: ${POSTGRES_DB:-pcclub}
     volumes:
       - ./:/code
     working_dir: /code
